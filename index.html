@@ -54,6 +54,14 @@
       font: inherit;
     }
     .button { display: inline-block; padding: .5rem 1rem; border-radius: .65rem; background: #0066cc; color: #fff; }
+    button.button { margin-top: 1rem; border: 0; font: inherit; cursor: pointer; }
+    button:disabled { background: #e0e0e0; color: #5e5e63; cursor: default; }
+    #save-status { margin: .5rem 0 0; }
+    #save-status:empty { margin: 0; }
+    .storage-note { margin: .5rem 0 0; color: #5e5e63; font-size: .9rem; }
+    #history-list { list-style: none; margin: 0; padding: 0; }
+    #history-list h2 { margin-bottom: .5rem; }
+    #history-list p { margin: 0; overflow-wrap: anywhere; }
     #history { display: none; }
     #history:target { display: block; }
     #history:target + #write { display: none; }
@@ -72,15 +80,16 @@
   <main class="wrap">
     <section id="history" aria-labelledby="history-title">
       <h1 id="history-title">지난 기록</h1>
-      <div class="card">
+      <div id="history-empty" class="card">
         <h2>아직 남긴 일기가 없어요</h2>
         <a class="button" href="#write">오늘 쓰기</a>
       </div>
+      <ul id="history-list" hidden></ul>
     </section>
     <section id="write" aria-labelledby="write-title">
       <h1 id="write-title">오늘 쓰기</h1>
-      <time datetime="2026-11-18">2026년 11월 18일</time>
-      <div class="card">
+      <time id="today"></time>
+      <form id="diary" class="card">
         <fieldset id="moods">
           <legend>오늘 기분은 어땠나요?</legend>
           <div class="moods">
@@ -92,23 +101,133 @@
         <div id="draft" hidden>
           <label id="question" for="entry" aria-live="polite"></label>
           <input id="entry" type="text">
+          <button id="save" class="button" type="submit" disabled>저장하기</button>
+          <p id="save-status" role="status"></p>
+          <p class="storage-note">기록은 이 브라우저에 저장돼요.</p>
         </div>
-      </div>
+      </form>
     </section>
   </main>
   <script>
     const moods = document.querySelector('#moods');
     const question = document.querySelector('#question');
     const draft = document.querySelector('#draft');
+    const entry = document.querySelector('#entry');
+    const save = document.querySelector('#save');
+    const saveStatus = document.querySelector('#save-status');
+    const today = document.querySelector('#today');
+    const historyList = document.querySelector('#history-list');
+    const historyEmpty = document.querySelector('#history-empty');
+    const storagePrefix = 'one-line-diary:';
+    const moodInputs = new Map(Array.from(moods.querySelectorAll('input'), input => [input.value, input]));
+
+    function localDateKey() {
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${now.getFullYear()}-${month}-${day}`;
+    }
+
+    function formatDate(date) {
+      const [year, month, day] = date.split('-').map(Number);
+      return `${year}년 ${month}월 ${day}일`;
+    }
+
+    function showDate(date) {
+      today.dateTime = date;
+      today.textContent = formatDate(date);
+    }
+
+    function readRecord(date) {
+      try {
+        const record = JSON.parse(localStorage.getItem(storagePrefix + date));
+        if (record?.date === date && moodInputs.has(record.mood) && typeof record.body === 'string') {
+          return record;
+        }
+      } catch {
+        // A blocked browser or an unreadable record leaves the editor available.
+      }
+      return null;
+    }
+
+    function renderHistory() {
+      let dates = [];
+      try {
+        dates = Object.keys(localStorage)
+          .filter(key => key.startsWith(storagePrefix))
+          .map(key => key.slice(storagePrefix.length))
+          .filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date))
+          .sort().reverse();
+      } catch {
+        // Storage can be blocked even when the page itself is available.
+      }
+
+      historyList.replaceChildren();
+      for (const date of dates) {
+        const record = readRecord(date);
+        if (!record) continue;
+
+        const item = document.createElement('li');
+        item.className = 'card';
+        const heading = document.createElement('h2');
+        const moodLabel = moodInputs.get(record.mood).labels[0].textContent;
+        heading.textContent = `${formatDate(date)} · ${moodLabel}`;
+        const body = document.createElement('p');
+        body.textContent = record.body;
+        item.append(heading, body);
+        historyList.append(item);
+      }
+      historyList.hidden = historyList.childElementCount === 0;
+      historyEmpty.hidden = !historyList.hidden;
+    }
+
+    function updateSaveButton() {
+      save.disabled = !moods.querySelector('input:checked') || !entry.value.trim();
+      saveStatus.textContent = '';
+    }
 
     function updateQuestion() {
       const selectedMood = moods.querySelector('input:checked');
       draft.hidden = !selectedMood;
       question.textContent = selectedMood?.dataset.question ?? '';
+      updateSaveButton();
     }
 
     moods.addEventListener('change', updateQuestion);
-    window.addEventListener('pageshow', updateQuestion);
+    entry.addEventListener('input', updateSaveButton);
+    document.querySelector('#diary').addEventListener('submit', event => {
+      event.preventDefault();
+      const mood = moods.querySelector('input:checked')?.value;
+      const body = entry.value.trim();
+      if (!mood || !body) return;
+
+      const date = localDateKey();
+      showDate(date);
+      try {
+        localStorage.setItem(storagePrefix + date, JSON.stringify({ date, mood, body }));
+      } catch {
+        saveStatus.textContent = '저장하지 못했어요. 다시 시도해 주세요';
+        return;
+      }
+      entry.value = body;
+      saveStatus.textContent = '오늘의 한 줄을 저장했어요';
+      renderHistory();
+    });
+
+    function loadToday() {
+      const date = localDateKey();
+      showDate(date);
+      const record = readRecord(date);
+      for (const input of moodInputs.values()) {
+        input.checked = input.value === record?.mood;
+      }
+      entry.value = record?.body ?? '';
+      updateQuestion();
+    }
+
+    loadToday();
+    renderHistory();
+    window.addEventListener('hashchange', renderHistory);
   </script>
 </body>
 </html>
