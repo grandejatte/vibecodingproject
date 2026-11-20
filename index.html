@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>한 줄 일기</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      font: 1rem/1.6 system-ui, sans-serif;
+    }
+    .wrap { width: min(100% - 2rem, 36rem); margin-inline: auto; }
+    header { background: #fff; border-bottom: 1px solid #e0e0e0; }
+    header .wrap {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: .5rem 1rem;
+      padding-block: 1rem;
+    }
+    nav { display: flex; gap: 1rem; }
+    a { color: #0066cc; text-underline-offset: .2em; }
+    main { padding-block: clamp(2rem, 8vw, 5rem); }
+    h1 { margin: 0; font-size: clamp(2rem, 6vw, 3rem); letter-spacing: -.04em; }
+    time { color: #5e5e63; }
+    .card { margin-top: 1.5rem; padding: clamp(1rem, 5vw, 2rem); background: #fff; border-radius: 1rem; }
+    h2 { margin: 0 0 1rem; font-size: 1.15rem; }
+    .moods { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .moods span {
+      padding: .5rem .85rem;
+      border: 1px solid #d2d2d7;
+      border-radius: .65rem;
+    }
+    .button { display: inline-block; padding: .5rem 1rem; border-radius: .65rem; background: #0066cc; color: #fff; }
+    #history { display: none; }
+    #history:target { display: block; }
+    #history:target + #write { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <strong>한 줄 일기</strong>
+      <nav aria-label="일기 화면">
+        <a href="#write">오늘 쓰기</a>
+        <a href="#history">지난 기록</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap">
+    <section id="history" aria-labelledby="history-title">
+      <h1 id="history-title">지난 기록</h1>
+      <div class="card">
+        <h2>아직 남긴 일기가 없어요</h2>
+        <a class="button" href="#write">오늘 쓰기</a>
+      </div>
+    </section>
+    <section id="write" aria-labelledby="write-title">
+      <h1 id="write-title">오늘 쓰기</h1>
+      <time datetime="2026-11-18">2026년 11월 18일</time>
+      <div class="card">
+        <h2>오늘 기분은 어땠나요?</h2>
+        <div class="moods">
+          <span>좋았어요</span>
+          <span>평범했어요</span>
+          <span>힘들었어요</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
