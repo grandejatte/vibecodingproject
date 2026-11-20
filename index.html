@@ -29,11 +29,29 @@
     time { color: #5e5e63; }
     .card { margin-top: 1.5rem; padding: clamp(1rem, 5vw, 2rem); background: #fff; border-radius: 1rem; }
     h2 { margin: 0 0 1rem; font-size: 1.15rem; }
+    fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+    legend { padding: 0; margin-bottom: 1rem; font-size: 1.15rem; font-weight: 700; }
     .moods { display: flex; flex-wrap: wrap; gap: .5rem; }
-    .moods span {
+    .moods label {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
       padding: .5rem .85rem;
       border: 1px solid #d2d2d7;
       border-radius: .65rem;
+      cursor: pointer;
+    }
+    .moods label:has(:checked) { border-color: #0066cc; background: #eef6ff; }
+    .moods input { margin: 0; accent-color: #0066cc; }
+    #draft { margin-top: 1.5rem; }
+    #question { display: block; margin-bottom: .5rem; font-weight: 600; }
+    #entry {
+      width: 100%;
+      padding: .65rem .85rem;
+      border: 1px solid #8e8e93;
+      border-radius: .65rem;
+      color: inherit;
+      font: inherit;
     }
     .button { display: inline-block; padding: .5rem 1rem; border-radius: .65rem; background: #0066cc; color: #fff; }
     #history { display: none; }
@@ -63,14 +81,34 @@
       <h1 id="write-title">오늘 쓰기</h1>
       <time datetime="2026-11-18">2026년 11월 18일</time>
       <div class="card">
-        <h2>오늘 기분은 어땠나요?</h2>
-        <div class="moods">
-          <span>좋았어요</span>
-          <span>평범했어요</span>
-          <span>힘들었어요</span>
+        <fieldset id="moods">
+          <legend>오늘 기분은 어땠나요?</legend>
+          <div class="moods">
+            <label><input type="radio" name="mood" value="good" data-question="오늘 다시 떠올리고 싶은 순간은 언제였나요?">좋았어요</label>
+            <label><input type="radio" name="mood" value="ordinary" data-question="별일 없어 보였던 오늘에서 하나만 기억한다면 무엇인가요?">평범했어요</label>
+            <label><input type="radio" name="mood" value="hard" data-question="오늘을 버티는 데 도움이 된 작은 일이 있었나요?">힘들었어요</label>
+          </div>
+        </fieldset>
+        <div id="draft" hidden>
+          <label id="question" for="entry" aria-live="polite"></label>
+          <input id="entry" type="text">
         </div>
       </div>
     </section>
   </main>
+  <script>
+    const moods = document.querySelector('#moods');
+    const question = document.querySelector('#question');
+    const draft = document.querySelector('#draft');
+
+    function updateQuestion() {
+      const selectedMood = moods.querySelector('input:checked');
+      draft.hidden = !selectedMood;
+      question.textContent = selectedMood?.dataset.question ?? '';
+    }
+
+    moods.addEventListener('change', updateQuestion);
+    window.addEventListener('pageshow', updateQuestion);
+  </script>
 </body>
 </html>
